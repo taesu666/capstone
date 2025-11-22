@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>피난안내도 이미지 처리 시스템</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>피난안내도 이미지 처리 시스템</h1>
+            <div class="progress-bar">
+                <div class="progress-bar__track">
+                    <div class="progress-bar__fill" id="progressFill"></div>
+                </div>
+                <div class="progress-bar__labels">
+                    <span>이미지 업로드</span> <!-- 1단계: 페이지1 -->
+                    <span>도면 추출</span> <!-- 2단계: 페이지2,3,4 -->
+                    <span>불필요 요소 제거</span> <!-- 3단계: 페이지5 -->
+                    <span>심볼 추가</span> <!-- 4단계: 페이지6,7 -->
+                    <span>최종 결과</span> <!-- 5단계: 페이지8 -->
+                </div>
+        </header>
+
+
+        <!-- 페이지 1: 이미지 업로드 -->
+        <div class="page" id="page1">
+            <div class="page-content">
+                <button class="voice-guide-btn" data-page="1">음성안내</button>
+                <h2>피난안내도 이미지 업로드</h2>
+                <div class="upload-area">
+                    <input type="file" id="imageUpload" accept="image/*">
+                    <label for="imageUpload" class="upload-button">이미지 선택</label>
+                    <button type="button" class="help-button" id="helpBtn" aria-label="촬영 가이드 열기">도움말</button>
+                </div>
+                <!-- 팝업(모달) -->
+                <div id="guideModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close" id="closeModalBtn">&times;</span>
+                        <h3>이미지 촬영 가이드</h3>
+                        <div class="tab">
+                            <button class="tablinks active" id="galaxyTabBtn">갤럭시 사용자</button>
+                            <button class="tablinks" id="iphoneTabBtn">아이폰 사용자</button>
+                        </div>
+                        <div id="galaxyTab" class="tabcontent" style="display:block;">
+                            <p>갤럭시 카메라의 <b>문서스캔</b> 기능을 사용하여 도면을 촬영하시면 더욱 깔끔한 이미지를 촬영하실 수 있습니다.</p>
+                            <img src="images/samsungscan.png" class="guide-modal-img"
+                                style="width:100%;max-width:320px;border-radius:8px;margin:12px 0;">
+                            <p>카메라로 도면을 비춘뒤 <b>우측하단 스캔버튼</b>을 터치하여 스캔기능을 활성화하신 후 이미지를 다운받아주세요.</p>
+                        </div>
+                        <div id="iphoneTab" class="tabcontent" style="display:none;">
+                            <p>아이폰 메모장 속 <b>문서스캔</b> 기능을 사용하여 도면을 촬영하시면 더욱 깔끔한 이미지를 촬영하실 수 있습니다.</p>
+                            <div class="iphone-image-row">
+                                <img src="images/applescan1.png" class="guide-modal-img"
+                                    style="width:100%;max-width:320px;border-radius:8px;margin:12px 0;">
+                                <img src="images/applescan2.png" class="guide-modal-img"
+                                    style="width:100%;max-width:320px;border-radius:8px;margin:12px 0;">
+                            </div>
+                            <p>메모장 속 하단 <b>클립버튼</b>을 터치한 후 <b>문서스캔</b>을 터치하신 후 이미지를 다운받아주세요.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="preview-container">
+                    <h3>원본 이미지 미리보기</h3>
+                    <div class="image-preview" id="originalPreview">
+                        <p class="placeholder-text">이미지를 업로드하면 여기에 미리보기가 표시됩니다.</p>
+                    </div>
+                </div>
+                <div class="button-container">
+                    <!-- <button id="startProcessBtn" class="primary-button" disabled title="이미지 변환 작업을 수동으로 시작합니다.">변환 시작</button> -->
+                    <button id="autoCompleteBtn" class="primary-button" disabled title="모든 변환 처리 단계를 자동으로 완료합니다.">변환
+                        시작</button>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- 페이지 2: 자동 추출 결과 -->
+        <div class="page" id="page2" style="display: none;">
+            <div class="page-content">
+                <button class="voice-guide-btn" data-page="2">음성안내</button>
+                <h2>자동 도면 추출 결과</h2>
+                <div class="compare-container">
+                    <div class="image-box">
+                        <h3>원본 이미지</h3>
+                        <div class="image-preview" id="page2-original"></div>
+                    </div>
+                    <div class="image-box">
+                        <h3>자동 추출 결과</h3>
+                        <div class="image-preview" id="autoExtractResult"></div>
+                    </div>
+                </div>
+                <div class="feedback-container">
+                    <p class="feedback-text">추출 결과가 만족스러운가요?</p>
+                    <div class="button-container">
+                        <button id="autoYesBtn" class="primary-button" disables
+                            title="자동으로 불필요 요소를 제거하고 다음단계로 넘어갑니다.">예</button>
+                        <button id="autoNoBtn" class="secondary-button" disables
+                            title="수동으로 추출할 도면 영역을 선택합니다.">아니오</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 페이지 3: 수동 영역 선택 -->
+        <div class="page" id="page3" style="display: none;">
+            <div class="page-content">
+                <button class="voice-guide-btn" data-page="3">음성안내</button>
+                <h2>원하는 영역 직접 선택</h2>
+                <p class="instruction">원본 이미지에서 추출하고 싶은 영역을 마우스로 드래그하여 선택하세요.</p>
+                <div class="manual-selection-container">
+                    <div class="image-canvas-container">
+                        <img id="originalImageForSelection" src="" alt="원본 이미지">
+                        <canvas id="selectionCanvas"></canvas>
+                    </div>
+                </div>
+                <div class="button-container">
+                    <button id="resetSelectionBtn" class="secondary-button">선택 초기화</button>
+                    <button id="completeSelectionBtn" class="primary-button">지정 완료</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 페이지 4: 수동 추출 결과 -->
+        <div class="page" id="page4" style="display: none;">
+            <div class="page-content">
+                <button class="voice-guide-btn" data-page="4">음성안내</button>
+                <h2>수동 영역 추출 결과</h2>
+                <div class="compare-container">
+                    <div class="image-box">
+                        <h3>원본 이미지</h3>
+                        <div class="image-preview" id="page4-original"></div>
+                    </div>
+                    <div class="image-box">
+                        <h3>수동 추출 결과</h3>
+                        <div class="image-preview" id="manualExtractResult"></div>
+                    </div>
+                </div>
+                <div class="button-container">
+                    <button id="toElementRemovalBtn" class="primary-button">불필요 요소 자동 제거</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 페이지 5: 불필요 요소 제거 (기존 페이지6 내용) -->
+        <div class="page" id="page5" style="display: none;">
+            <div class="page-content">
+                <button class="voice-guide-btn" data-page="5">음성안내</button>
+                <h2>불필요한 요소 수동 제거</h2>
+                <p class="instruction">제거하고 싶은 요소를 마우스로 드래그하여 선택하세요.</p>
+                <div class="element-removal-container">
+                    <div class="image-canvas-container">
+                        <img id="extractedImageForRemoval" src="" alt="추출된 이미지">
+                        <canvas id="removalCanvas"></canvas>
+                    </div>
+                </div>
+                <div class="button-container">
+                    <button id="resetRemovalBtn" class="secondary-button">선택 초기화</button>
+                    <button id="removeElementsBtn" class="primary-button">다음</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 페이지 6: 계단심볼추가 (기존 페이지5 내용) -->
+        <div class="page" id="page6" style="display: none;">
+            <div class="page-content">
+                <button class="voice-guide-btn" data-page="6">음성안내</button>
+                <h2>계단 심볼 추가</h2>
+                <p class="instruction">계단 영역을 마우스로 드래그하여 선택하세요.</p>
+                <!-- 도움말 버튼 추가 -->
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <button type="button" class="help-button" id="stairHelpBtn" aria-label="계단 선택 가이드 열기">도움말</button>
+                </div>
+                <!-- 계단 선택 가이드 모달 -->
+                <div id="stairGuideModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close" id="closeStairGuideBtn">&times;</span>
+                        <h3>계단 선택 가이드</h3>
+                        <div class="stair-guide-content">
+                            <div class="stair-images-container">
+                                <div class="stair-image-item">
+                                    <img src="images/stairs1.jpg" class="guide-modal-img" alt="계단 예시 1">
+                                    <p class="image-caption"></p>
+                                </div>
+                                <div class="stair-image-item">
+                                    <img src="images/stairs2.png" class="guide-modal-img" alt="계단 예시 2">
+                                    <p class="image-caption"></p>
+                                </div>
+                            </div>
+                            <div class="stair-guide-text">
+                                <p><strong>이런 종류의 계단을 선택해주세요.</strong></p>
+                                <ul style="margin-top: 10px; text-align: left;">
+                                    <li>직선형, 꺾인형, 나선형 등 모든 형태의 계단</li>
+                                    <li>계단의 전체 영역을 드래그하여 선택</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="element-removal-container">
+                    <div class="image-canvas-container">
+                        <img id="extractedImageForStairRemoval" src="" alt="추출된 이미지">
+                        <canvas id="stairRemovalCanvas"></canvas>
+                    </div>
+                </div>
+                <div class="button-container">
+                    <button id="resetStairSelectionBtn" class="secondary-button">다시 선택하기</button>
+                    <button id="removeStairBtn" class="primary-button">선택 완료 </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 페이지7: 심볼추가 결과 확인 -->
+        <div class="page" id="page7" style="display: none;">
+            <div class="page-content">
+                <button class="voice-guide-btn" data-page="7">음성안내</button>
+                <h2>심볼추가 결과</h2>
+                <div class="compare-container">
+                    <div class="image-box">
+                        <h3>원본 도면</h3>
+                        <div class="image-preview" id="page7-before-removal"></div>
+                    </div>
+                    <div class="image-box">
+                        <h3>심볼추가 결과</h3>
+                        <div class="image-preview">
+                            <img id="stairRemovalPreview" src="" alt="심볼추가 결과 이미지">
+                        </div>
+                    </div>
+                </div>
+                <div class="button-container">
+                    <button id="toFinalResultBtn" class="primary-button">다음</button>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- 페이지 8 최종 결과 -->
+        <div class="page" id="page8" style="display: none;">
+            <div class="page-content">
+                <button class="voice-guide-btn" data-page="8">음성안내</button>
+
+                <!-- 수정된 헤더 -->
+                <div class="result-header-new">
+                    <h2>최종 처리 결과</h2>
+                    <button type="button" class="help-button" id="resultHelpBtn" aria-label="다운로드 안내 열기">도움말</button>
+                </div>
+                <div id="resultGuideModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close" id="closeResultGuideBtn">&times;</span>
+                        <h3>점자출력 가이드</h3>
+
+                        <!-- 5개 탭 버튼 -->
+                        <div class="guide-tab-bar">
+                            <button class="guide-tab-btn active" data-tab="guide-tab1">1단계</button>
+                            <button class="guide-tab-btn" data-tab="guide-tab2">2단계</button>
+                            <button class="guide-tab-btn" data-tab="guide-tab3">3단계</button>
+                            <button class="guide-tab-btn" data-tab="guide-tab4">4단계</button>
+                            <button class="guide-tab-btn" data-tab="guide-tab5">5단계</button>
+                        </div>
+
+                        <!-- 탭 내용 -->
+                        <div class="guide-tab-content">
+                            <!-- 1단계 -->
+                            <div id="guide-tab1" class="guide-tab-pane active">
+                                <img src="images/1.png" alt="점사랑 설정" class="guide-step-img">
+                                <p>
+                                    <a href="https://www.korean.go.kr/braille/common/greeting.do" target="_blank"
+                                        style="color: #3498db; text-decoration: underline;">
+                                        점사랑 다운로드
+                                    </a>
+                                </p>
+                                <p>점사랑을 실행한 후 상단 [설정] → [점자 페이지 설정]을 클릭한다.</p>
+                            </div>
+
+                            <!-- 2단계 -->
+                            <div id="guide-tab2" class="guide-tab-pane">
+                                <img src="images/2.png" alt="점 간격 설정" class="guide-step-img">
+                                <p>점 간격은 <strong>1.6mm</strong>를 선택하고 [확인] 버튼을 클릭한다.</p>
+                            </div>
+
+                            <!-- 3단계 -->
+                            <div id="guide-tab3" class="guide-tab-pane">
+                                <img src="images/3.png" alt="이미지 삽입" class="guide-step-img">
+                                <p>점사랑 상단에 [이미지/도형] → [이미지 삽입]을 클릭한 후 다운로드 받은 처리된 도면을 선택한다.</p>
+                            </div>
+
+                            <!-- 4단계 -->
+                            <div id="guide-tab4" class="guide-tab-pane">
+                                <img src="images/4.png" alt="점자인쇄 메뉴" class="guide-step-img">
+                                <p>상단 좌측 [파일] → [점자인쇄] 버튼을 클릭한다.</p>
+                            </div>
+
+                            <!-- 5단계 -->
+                            <div id="guide-tab5" class="guide-tab-pane">
+                                <img src="images/5.png" alt="인쇄 실행" class="guide-step-img">
+                                <p>점자인쇄 미리보기를 통해 출력결과를 미리 확인하고 [인쇄] 버튼을 클릭하여 인쇄한다.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- 객체 개수 표시 -->
+                <div id="objectCountDisplay" style="margin: 10px 0; font-weight: bold; color: #2c3e50;"></div>
+
+                <!-- 결과 이미지 -->
+                <div class="compare-container">
+                    <div class="image-box">
+                        <h3>최종 결과</h3>
+                        <div class="image-preview" id="finalResult"></div>
+                    </div>
+                </div>
+
+                <!-- 수정된 버튼 배치 -->
+                <div class="final-btn-grid">
+                    <div class="btn-row">
+                        <button id="downloadBtn" class="primary-button">점자지도 파일 다운로드</button>
+                        <button id="download3dBtn" class="primary-button">3D 프린터 촉지도 파일 다운로드</button>
+                    </div>
+                    <div class="btn-row">
+                        <button id="restartBtn" class="secondary-button">새 도면 입력</button>
+                        <button id="manualRestartBtn" class="primary-button">수동 변환 시작</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <script src="script.js"></script>
+</body>
+
+</html>
